@@ -1,0 +1,67 @@
+{% extends "user_base.html" %}
+{% block title %}App Summary{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Parking Summary</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Spent</h5>
+                    <h3>₹{{ user_total_spent }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Parking Time</h5>
+                    <h3>{{ user_total_time }} hrs</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Bookings</h5>
+                    <h3>{{ user_booking_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Payments</h5>
+                    <h3>{{ user_payment_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>App Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Total Users:</strong> {{ total_users }}</p>
+                    <p><strong>Total Bookings:</strong> {{ total_bookings }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ userfn }}</p>
+                    <p><strong>User ID:</strong> {{ id }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

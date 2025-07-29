@@ -1,0 +1,15 @@
+{% extends "admin_base.html" %}
+{% block content %}
+<h2>Add Parking Zone</h2>
+<form method="POST">
+  <div class="mb-3">
+    <label class="form-label">Zone Name</label>
+    <input type="text" name="name" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">City</label>
+    <input type="text" name="city" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-success">Add Zone</button>
+</form>
+{% endblock %}

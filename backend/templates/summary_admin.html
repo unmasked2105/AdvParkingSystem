@@ -1,0 +1,114 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Summary{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Summary Dashboard</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Revenue</h5>
+                    <h3>₹{{ total_revenue }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Users with Payments</h5>
+                    <h3>{{ users_with_payments }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Bookings</h5>
+                    <h3>{{ total_bookings }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Payments</h5>
+                    <h3>{{ total_payments }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Revenue by User</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>User Payment Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Amount</th>
+                                    <th>Payments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in range(user_names|length) %}
+                                <tr>
+                                    <td>{{ user_names[i] }}</td>
+                                    <td>₹{{ amounts[i] }}</td>
+                                    <td>{{ payment_counts[i] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ user_names | tojson }},
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: {{ amounts | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

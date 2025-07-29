@@ -1,0 +1,121 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Admin Dashboard</h2>
+    <div class="mb-4 d-flex gap-3">
+        <a href="{{ url_for('add_parking_zone') }}" class="btn btn-success btn-lg">
+            ➕ Add Parking Zone
+        </a>
+        <a href="{{ url_for('add_parking_slot') }}" class="btn btn-warning btn-lg">
+            ➕ Add Parking Slot
+        </a>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Users</h5>
+                    <h2>{{ total_users }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-success mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Places/Zones</h5>
+                    <h2>{{ total_zones }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Slots</h5>
+                    <h2>{{ total_slots }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h4>All Users</h4>
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Address</th>
+                    <th>Pincode</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.fullname }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.address }}</td>
+                    <td>{{ user.pincode }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h4>All Places / Zones</h4>
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>City</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for zone in zones %}
+                <tr>
+                    <td>{{ zone.id }}</td>
+                    <td>{{ zone.name }}</td>
+                    <td>{{ zone.city }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <h4>All Parking Slots</h4>
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Location</th>
+                    <th>Slot Number</th>
+                    <th>Zone</th>
+                    <th>City</th>
+                    <th>Pincode</th>
+                    <th>Price/Hour</th>
+                    <th>Available</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slot in slots %}
+                <tr>
+                    <td>{{ slot.id }}</td>
+                    <td>{{ slot.location }}</td>
+                    <td>{{ slot.slot_number }}</td>
+                    <td>{{ slot.zone.name if slot.zone else 'N/A' }}</td>
+                    <td>{{ slot.zone.city if slot.zone else 'N/A' }}</td>
+                    <td>{{ slot.pincode }}</td>
+                    <td>₹{{ slot.price_per_hour }}</td>
+                    <td>{% if slot.is_available %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-danger">No</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "admin_base.html" %}
+
+{% block title %}Admin Search{% endblock %}
+
+{% block content %}
+<h2>Admin Search</h2>
+
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <label class="form-label">Search By:</label>
+    <select id="searchType" class="form-select">
+      <option value="">Select...</option>
+      <option value="user">User ID</option>
+      <option value="location">Parking Location</option>
+    </select>
+  </div>
+  <div class="col-md-6 mb-3">
+    <label id="searchLabel" class="form-label">Value</label>
+    <input type="text" class="form-control" id="searchValue" placeholder="Enter value" disabled>
+  </div>
+</div>
+
+<div id="results" class="mt-4"></div>
+
+<hr>
+
+<h4 class="mt-5">Add New User</h4>
+<form id="addUserForm" class="mb-4">
+  <div class="row">
+    <div class="col-md-6 mb-2">
+      <input type="text" class="form-control" id="fullname" placeholder="Full Name" required>
+    </div>
+    <div class="col-md-6 mb-2">
+      <input type="email" class="form-control" id="email" placeholder="Email" required>
+    </div>
+    <div class="col-md-6 mb-2">
+      <input type="text" class="form-control" id="address" placeholder="Address" required>
+    </div>
+    <div class="col-md-6 mb-2">
+      <input type="text" class="form-control" id="pincode" placeholder="Pincode" required>
+    </div>
+    <div class="col-md-6 mb-2">
+      <input type="password" class="form-control" id="password" placeholder="Password (optional)">
+    </div>
+    <div class="col-md-12">
+      <button type="submit" class="btn btn-success">Add User</button>
+    </div>
+  </div>
+</form>
+<div id="addUserMsg" class="mt-2"></div>
+
+<script>
+  const searchType = document.getElementById('searchType');
+  const searchValue = document.getElementById('searchValue');
+  const results = document.getElementById('results');
+
+  searchType.addEventListener('change', () => {
+    searchValue.disabled = !searchType.value;
+    searchValue.value = '';
+    results.innerHTML = '';
+    if (searchType.value === "location") {
+      searchValue.placeholder = "Enter Parking Location";
+    } else if (searchType.value === "user") {
+      searchValue.placeholder = "Enter User ID";
+    }
+  });
+
+  searchValue.addEventListener('input', async () => {
+    const type = searchType.value;
+    const value = searchValue.value.trim();
+
+    if (!value) return (results.innerHTML = '');
+
+    if (type === 'user') {
+      const res = await fetch(`/api/user/${value}`);
+      const data = await res.json();
+      if (data.error) return results.innerHTML = `<p class="text-danger">User not found.</p>`;
+      results.innerHTML = `
+        <h4>User Info</h4>
+        <ul>
+          <li><strong>Name:</strong> ${data.fullname}</li>
+          <li><strong>Email:</strong> ${data.email}</li>
+          <li><strong>Address:</strong> ${data.address}</li>
+          <li><strong>Pincode:</strong> ${data.pincode}</li>
+        </ul>
+      `;
+    } else if (type === 'location') {
+      const res = await fetch(`/api/parking-slots?location=${encodeURIComponent(value)}`);
+      const slots = await res.json();
+      if (!slots.length) return results.innerHTML = `<p>No slots found for this location.</p>`;
+
+      let html = `<h4>Parking Slots</h4>`;
+      html += `<table class="table table-bordered"><thead><tr>
+                  <th>ID</th><th>Slot #</th><th>Available</th><th>Price/hr</th><th>Pincode</th>
+              </tr></thead><tbody>`;
+      for (const slot of slots) {
+        html += `<tr>
+                    <td>${slot.id}</td>
+                    <td>${slot.slot_number}</td>
+                    <td>${slot.is_available ? 'Yes' : 'No'}</td>
+                    <td>${slot.price_per_hour}</td>
+                    <td>${slot.pincode}</td>
+                </tr>`;
+      }
+      html += `</tbody></table>`;
+      results.innerHTML = html;
+    }
+  });
+
+  // Add User via AJAX
+  document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const user = {
+      fullname: document.getElementById('fullname').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      pincode: document.getElementById('pincode').value.trim(),
+      password: document.getElementById('password').value.trim()
+    };
+
+    const res = await fetch('/api/add_user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(user)
+    });
+
+    const data = await res.json();
+    const msgDiv = document.getElementById('addUserMsg');
+
+    if (res.ok) {
+      msgDiv.innerHTML = `<div class="alert alert-success">✅ ${data.message}</div>`;
+      document.getElementById('addUserForm').reset();
+    } else {
+      msgDiv.innerHTML = `<div class="alert alert-danger">❌ ${data.error || 'Error adding user'}</div>`;
+    }
+  });
+</script>
+{% endblock %}

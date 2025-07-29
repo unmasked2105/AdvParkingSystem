@@ -1,0 +1,230 @@
+{% extends "user_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div id="expiringAlert"></div>
+    <h2>Welcome, {{ user.fullname }}</h2>
+
+    <hr>
+    <h4>Search Parking Slots</h4>
+    <div class="input-group mb-3">
+        <input type="text" id="searchQuery" class="form-control" placeholder="Search by location or pincode">
+        <button class="btn btn-primary" onclick="searchSlots()">Search</button>
+    </div>
+
+    <div id="searchResults"></div>
+
+    <!-- Booking Form -->
+    <div id="bookingForm" class="card mt-4 d-none">
+        <div class="card-body">
+            <h5 class="card-title">Book Selected Slot</h5>
+            <form id="bookSlotForm">
+                <input type="hidden" id="selectedSlotId">
+                <div class="mb-3">
+                    <label for="vehicleNumber" class="form-label">Vehicle Number</label>
+                    <input type="text" id="vehicleNumber" class="form-control" required>
+                </div>
+                <div class="mb-3 row">
+                    <label class="form-label">Duration</label>
+                    <div class="col-6">
+                        <input type="number" id="durationHours" class="form-control" min="0" max="24" placeholder="Hours" required>
+                    </div>
+                    <div class="col-6">
+                        <input type="number" id="durationMinutes" class="form-control" min="0" max="59" placeholder="Minutes" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <hr>
+    <h4>Recent Parking History</h4>
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Location</th>
+                    <th>Vehicle No</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="bookingHistory"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const userId = {{ id }};
+
+    function searchSlots() {
+        const query = $('#searchQuery').val();
+        if (!query.trim()) return;
+
+        $.ajax({
+            url: '/api/search_slots',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ query }),
+            success: function (data) {
+                const results = data.results;
+                let html = '';
+                if (results.length === 0) {
+                    html += `<div class="alert alert-warning">No slots found for "${query}".</div>`;
+                } else {
+                    html += `<table class="table table-bordered mt-2">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Location</th>
+                                <th>Pincode</th>
+                                <th>Slot Number</th>
+                                <th>Available Slots</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead><tbody>`;
+                    results.forEach(slot => {
+                        html += `<tr>
+                            <td>${slot.id}</td>
+                            <td>${slot.location}</td>
+                            <td>${slot.pincode}</td>
+                            <td>${slot.slot_number}</td>
+                            <td>${slot.available_slots}</td>
+                            <td><button class="btn btn-success btn-sm" onclick="showBookingForm(${slot.id})">Book</button></td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                }
+                $('#searchResults').html(html);
+            }
+        });
+    }
+
+    function showBookingForm(slotId) {
+        $('#selectedSlotId').val(slotId);
+        $('#bookingForm').removeClass('d-none');
+        $('#vehicleNumber').val('');
+        $('#durationHours').val('');
+        $('#durationMinutes').val('');
+    }
+
+    $('#bookSlotForm').submit(function (e) {
+        e.preventDefault();
+        const slotId = $('#selectedSlotId').val();
+        const vehicleNumber = $('#vehicleNumber').val();
+        const hours = parseInt($('#durationHours').val()) || 0;
+        const minutes = parseInt($('#durationMinutes').val()) || 0;
+        if (hours === 0 && minutes === 0) {
+            alert('Please enter a valid duration.');
+            return;
+        }
+        const duration = hours + minutes / 60;
+
+        $.ajax({
+            url: '/api/book_slot',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                user_id: userId,
+                slot_id: slotId,
+                vehicle_number: vehicleNumber,
+                duration: duration
+            }),
+            success: function (response) {
+                alert(response.message);
+                $('#bookingForm').addClass('d-none');
+                loadBookingHistory();
+                searchSlots();  // refresh search to update availability
+            },
+            error: function (xhr) {
+                alert(xhr.responseJSON?.error || 'Booking failed.');
+            }
+        });
+    });
+
+    function loadBookingHistory() {
+        $.ajax({
+            url: `/api/user/${userId}/bookings`,
+            method: 'GET',
+            success: function (data) {
+                let html = '';
+                let expiringSoon = false;
+                let now = new Date();
+                data.forEach(b => {
+                    if (b.status === 'active') {
+                        let endTime = new Date(b.end_time.replace(' ', 'T'));
+                        let diffMs = endTime - now;
+                        let diffMin = diffMs / 60000;
+                        if (diffMin > 0 && diffMin <= 10) {
+                            expiringSoon = true;
+                        }
+                    }
+                });
+                if (expiringSoon) {
+                    $('#expiringAlert').html(`
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            <strong>⏰ Warning:</strong> Your parking time will expire in less than 10 minutes!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `);
+                } else {
+                    $('#expiringAlert').html('');
+                }
+                if (data.length === 0) {
+                    html += '<tr><td colspan="8" class="text-center">No bookings yet.</td></tr>';
+                } else {
+                    data.forEach(b => {
+                        let paymentButton = '';
+                        let actionButton = '';
+                        if (b.status === 'active' && !b.payment_id) {
+                            paymentButton = `<a href="/payment/${b.id}" class="btn btn-primary btn-sm">💳 Pay</a>`;
+                            actionButton = `<button class="btn btn-danger btn-sm" disabled title="Complete payment first">Release</button>`;
+                        } else if (b.status === 'active' && b.payment_id) {
+                            paymentButton = `<span class="badge bg-success">Paid</span>`;
+                            actionButton = `<button class="btn btn-danger btn-sm" onclick="releaseSlot(${b.id})">Release</button>`;
+                        } else {
+                            paymentButton = '-';
+                            actionButton = '-';
+                        }
+                        html += `<tr>
+                            <td>${b.id}</td>
+                            <td>${b.slot_id}</td>
+                            <td>${b.vehicle_number}</td>
+                            <td>${b.start_time}</td>
+                            <td>${b.end_time}</td>
+                            <td><span class="badge bg-${b.status === 'active' ? 'success' : 'secondary'}">${b.status}</span></td>
+                            <td>${paymentButton}</td>
+                            <td>${actionButton}</td>
+                        </tr>`;
+                    });
+                }
+                $('#bookingHistory').html(html);
+            }
+        });
+    }
+
+    function releaseSlot(bookingId) {
+        $.ajax({
+            url: `/api/release/${bookingId}`,
+            method: 'POST',
+            success: function (res) {
+                alert(res.message);
+                loadBookingHistory();
+                searchSlots();  // refresh search to update availability
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        loadBookingHistory();
+    });
+</script>
+{% endblock %}

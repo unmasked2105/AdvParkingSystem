@@ -1,0 +1,97 @@
+
+{% extends "user_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ userfn }}</h2>
+
+<h4 class="mt-4">Recent Released Parking History</h4>
+<table class="table table-bordered mt-2">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Location</th>
+            <th>Vehicle No</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for booking in history %}
+        <tr>
+            <td>{{ booking.id }}</td>
+            <td>{{ booking.slot.location if booking.slot else 'N/A' }}</td>
+            <td>{{ booking.vehicle_number }}</td>
+            <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>{{ booking.status }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" class="text-center">No recent released parking history found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+<h3>Search Parking Slots</h3>
+<form method="POST" class="mb-3">
+    <input type="text" name="query" placeholder="Search by location or pincode" class="form-control" required>
+    <button type="submit" class="btn btn-primary mt-2">Search</button>
+</form>
+
+{% if search_results %}
+<h4>Search Results:</h4>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Address</th>
+            <th>Availability</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for slot in search_results %}
+        <tr>
+            <td>{{ slot.id }}</td>
+            <td>{{ slot.location }}</td>
+            <td>{{ 'Available' if slot.is_available else 'Not Available' }}</td>
+            <td>
+                {% if slot.is_available %}
+                    <!-- Book Button triggers form display via query param -->
+                    <a href="{{ url_for('user_profile', id=id) }}?book_slot_id={{ slot.id }}" class="btn btn-success">Book</a>
+                {% else %}
+                    <button class="btn btn-secondary" disabled>Unavailable</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if selected_slot %}
+<hr>
+<h4>Book Slot #{{ selected_slot.id }} at {{ selected_slot.location }}</h4>
+<form method="POST">
+    <input type="hidden" name="slot_id" value="{{ selected_slot.id }}">
+    <div class="mb-2">
+        <label for="vehicle_number">Vehicle Number</label>
+        <input type="text" name="vehicle_number" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label for="duration">Duration (in hours)</label>
+        <input type="number" name="duration" min="1" max="24" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Confirm Booking</button>
+</form>
+{% endif %}
+
+
+{% endblock %}

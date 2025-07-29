@@ -1,0 +1,64 @@
+{% extends "user_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">💳 Payment Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Booking Information</h5>
+                            <div class="mb-3">
+                                <strong>Vehicle Number:</strong> {{ booking.vehicle_number }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Location:</strong> {{ slot.location }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Slot Number:</strong> {{ slot.slot_number }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Start Time:</strong> {{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>End Time:</strong> {{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                            <div class="mb-3">
+                                <strong>Rate:</strong> ₹{{ slot.price_per_hour }}/hour
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Payment Summary</h5>
+                            <div class="alert alert-info">
+                                <h3 class="text-center">₹{{ "%.2f"|format(amount) }}</h3>
+                                <p class="text-center mb-0">Total Amount</p>
+                            </div>
+                            
+                            <form method="POST">
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label">Payment Method</label>
+                                    <select class="form-select" id="payment_method" name="payment_method" required>
+                                        <option value="">Select payment method</option>
+                                        <option value="UPI">UPI</option>
+                                        <option value="Card">Credit/Debit Card</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Net Banking">Net Banking</option>
+                                    </select>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success btn-lg w-100">
+                                    💳 Pay Now
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
