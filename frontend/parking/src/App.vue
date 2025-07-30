@@ -22,7 +22,11 @@ export default {
       bookingForm: { vehicle_number: '', duration: 1 },
       paymentForm: { method: '', amount: 0 },
       searchForm: { location: '', pincode: '' },
-      adminSearchForm: { searchQuery: '', searchType: 'all' },
+      adminSearchForm: { 
+        searchQuery: '', 
+        searchType: 'all',
+        filterType: 'id' // New field for filter type
+      },
       
       // Data arrays
       lots: [],
@@ -59,6 +63,15 @@ export default {
       this.token = savedToken
       this.decodeToken()
       this.loadData()
+    }
+  },
+  
+  watch: {
+    // Watch for changes in search type and adjust filter type accordingly
+    'adminSearchForm.searchType'(newType) {
+      if (newType === 'lots' && this.adminSearchForm.filterType === 'email') {
+        this.adminSearchForm.filterType = 'id' // Reset to ID if email is selected for lots
+      }
     }
   },
   
@@ -240,7 +253,8 @@ export default {
       try {
         const response = await axios.post('/api/admin/search', {
           search_query: this.adminSearchForm.searchQuery,
-          search_type: this.adminSearchForm.searchType
+          search_type: this.adminSearchForm.searchType,
+          filter_type: this.adminSearchForm.filterType
         }, { headers: { Authorization: `Bearer ${this.token}` } })
         
         this.searchResults = {
@@ -254,8 +268,78 @@ export default {
     
     // Clear admin search
     clearAdminSearch() {
-      this.adminSearchForm = { searchQuery: '', searchType: 'all' }
+      this.adminSearchForm = { searchQuery: '', searchType: 'all', filterType: 'id' }
       this.searchResults = { users: [], lots: [] }
+    },
+    
+    // Get search placeholder based on filter type
+    getSearchPlaceholder() {
+      const filterType = this.adminSearchForm.filterType
+      const searchType = this.adminSearchForm.searchType
+      
+      if (searchType === 'users') {
+        switch (filterType) {
+          case 'id': return 'Enter user ID (e.g., 1, 2, 3...)'
+          case 'name': return 'Enter user name (e.g., John Doe)'
+          case 'email': return 'Enter email (e.g., john@example.com)'
+          case 'pincode': return 'Enter pincode (e.g., 123456)'
+          case 'address': return 'Enter address'
+          default: return 'Enter search term...'
+        }
+      } else if (searchType === 'lots') {
+        switch (filterType) {
+          case 'id': return 'Enter lot ID (e.g., 1, 2, 3...)'
+          case 'name': return 'Enter lot name (e.g., Central Parking)'
+          case 'email': return 'Not applicable for lots'
+          case 'pincode': return 'Enter pincode (e.g., 123456)'
+          case 'address': return 'Enter address'
+          default: return 'Enter search term...'
+        }
+      } else {
+        switch (filterType) {
+          case 'id': return 'Enter ID (user or lot)'
+          case 'name': return 'Enter name (user or lot)'
+          case 'email': return 'Enter email (users only)'
+          case 'pincode': return 'Enter pincode'
+          case 'address': return 'Enter address'
+          default: return 'Enter search term...'
+        }
+      }
+    },
+    
+    // Get search hint based on filter type
+    getSearchHint() {
+      const filterType = this.adminSearchForm.filterType
+      const searchType = this.adminSearchForm.searchType
+      
+      if (searchType === 'users') {
+        switch (filterType) {
+          case 'id': return 'Search users by their ID number'
+          case 'name': return 'Search users by their full name'
+          case 'email': return 'Search users by their email address'
+          case 'pincode': return 'Search users by their pincode'
+          case 'address': return 'Search users by their address'
+          default: return 'Search users by any field'
+        }
+      } else if (searchType === 'lots') {
+        switch (filterType) {
+          case 'id': return 'Search parking lots by their ID number'
+          case 'name': return 'Search parking lots by their name'
+          case 'email': return 'Email search not available for parking lots'
+          case 'pincode': return 'Search parking lots by pincode'
+          case 'address': return 'Search parking lots by address'
+          default: return 'Search parking lots by any field'
+        }
+      } else {
+        switch (filterType) {
+          case 'id': return 'Search users and lots by ID'
+          case 'name': return 'Search users by name and lots by name'
+          case 'email': return 'Search users by email (lots not applicable)'
+          case 'pincode': return 'Search users and lots by pincode'
+          case 'address': return 'Search users and lots by address'
+          default: return 'Search across all fields'
+        }
+      }
     },
     
     // Book parking spot
@@ -1003,7 +1087,7 @@ export default {
             </div>
             <div class="card-body">
               <div class="row mb-3">
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label">Search Type</label>
                   <select v-model="adminSearchForm.searchType" class="form-control">
                     <option value="all">All (Users & Lots)</option>
@@ -1011,13 +1095,22 @@ export default {
                     <option value="lots">Lots Only</option>
                   </select>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label">Search Query</label>
+                <div class="col-md-3">
+                  <label class="form-label">Filter By</label>
+                  <select v-model="adminSearchForm.filterType" class="form-control">
+                    <option value="id">ID</option>
+                    <option value="name">Name</option>
+                    <option value="email" :disabled="adminSearchForm.searchType === 'lots'">Email</option>
+                    <option value="pincode">Pincode</option>
+                    <option value="address">Address</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Search Input</label>
                   <input v-model="adminSearchForm.searchQuery" type="text" class="form-control" 
-                         placeholder="Search by ID, name, email, address, or pincode...">
+                         :placeholder="getSearchPlaceholder()">
                   <small class="form-text text-muted">
-                    For Users: Search by ID, name, email, or pincode | 
-                    For Lots: Search by ID, name, address, or pincode
+                    {{ getSearchHint() }}
                   </small>
                 </div>
                 <div class="col-md-2">

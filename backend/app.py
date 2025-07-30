@@ -246,39 +246,44 @@ def api_admin_search():
         data = request.get_json()
         search_query = data.get('search_query', '')
         search_type = data.get('search_type', 'all')  # all, users, lots
+        filter_type = data.get('filter_type', 'id')  # id, name, email, pincode, address
         
         results = {
             'users': [],
             'lots': []
         }
         
-        # Search users by ID, name, email, or pincode
+        # Search users by specific filter type
         if search_type in ['all', 'users']:
             users = []
             if search_query:
-                # Try to search by ID first (if query is numeric)
-                if search_query.isdigit():
+                if filter_type == 'id' and search_query.isdigit():
+                    # Search by ID
                     user_by_id = User.query.filter_by(id=int(search_query)).first()
                     if user_by_id:
                         users.append(user_by_id)
-                
-                # Search by name, email, or pincode
-                users.extend(User.query.filter(
-                    or_(
-                        User.fullname.ilike(f'%{search_query}%'),
-                        User.email.ilike(f'%{search_query}%'),
-                        User.pincode.ilike(f'%{search_query}%')
-                    )
-                ).all())
-                
-                # Remove duplicates
-                seen_ids = set()
-                unique_users = []
-                for user in users:
-                    if user.id not in seen_ids:
-                        seen_ids.add(user.id)
-                        unique_users.append(user)
-                users = unique_users
+                elif filter_type == 'name':
+                    # Search by name
+                    users = User.query.filter(User.fullname.ilike(f'%{search_query}%')).all()
+                elif filter_type == 'email':
+                    # Search by email
+                    users = User.query.filter(User.email.ilike(f'%{search_query}%')).all()
+                elif filter_type == 'pincode':
+                    # Search by pincode
+                    users = User.query.filter(User.pincode.ilike(f'%{search_query}%')).all()
+                elif filter_type == 'address':
+                    # Search by address
+                    users = User.query.filter(User.address.ilike(f'%{search_query}%')).all()
+                else:
+                    # Fallback: search across all fields
+                    users = User.query.filter(
+                        or_(
+                            User.fullname.ilike(f'%{search_query}%'),
+                            User.email.ilike(f'%{search_query}%'),
+                            User.pincode.ilike(f'%{search_query}%'),
+                            User.address.ilike(f'%{search_query}%')
+                        )
+                    ).all()
             else:
                 # If no search query, return all users
                 users = User.query.all()
@@ -291,33 +296,41 @@ def api_admin_search():
                 'pincode': user.pincode
             } for user in users]
         
-        # Search lots by ID, name, address, or pincode
+        # Search lots by specific filter type
         if search_type in ['all', 'lots']:
             lots = []
             if search_query:
-                # Try to search by ID first (if query is numeric)
-                if search_query.isdigit():
+                if filter_type == 'id' and search_query.isdigit():
+                    # Search by ID
                     lot_by_id = ParkingZone.query.filter_by(id=int(search_query)).first()
                     if lot_by_id:
                         lots.append(lot_by_id)
-                
-                # Search by name, address, or pincode
-                lots.extend(ParkingZone.query.join(ParkingSlot).filter(
-                    or_(
-                        ParkingZone.name.ilike(f'%{search_query}%'),
-                        ParkingZone.city.ilike(f'%{search_query}%'),
+                elif filter_type == 'name':
+                    # Search by name
+                    lots = ParkingZone.query.filter(ParkingZone.name.ilike(f'%{search_query}%')).all()
+                elif filter_type == 'email':
+                    # Email not applicable for lots, return empty
+                    lots = []
+                elif filter_type == 'pincode':
+                    # Search by pincode (from associated slots)
+                    lots = ParkingZone.query.join(ParkingSlot).filter(
                         ParkingSlot.pincode.ilike(f'%{search_query}%')
-                    )
-                ).distinct().all())
-                
-                # Remove duplicates
-                seen_ids = set()
-                unique_lots = []
-                for lot in lots:
-                    if lot.id not in seen_ids:
-                        seen_ids.add(lot.id)
-                        unique_lots.append(lot)
-                lots = unique_lots
+                    ).distinct().all()
+                elif filter_type == 'address':
+                    # Search by address (from associated slots)
+                    lots = ParkingZone.query.join(ParkingSlot).filter(
+                        ParkingSlot.location.ilike(f'%{search_query}%')
+                    ).distinct().all()
+                else:
+                    # Fallback: search across all fields
+                    lots = ParkingZone.query.join(ParkingSlot).filter(
+                        or_(
+                            ParkingZone.name.ilike(f'%{search_query}%'),
+                            ParkingZone.city.ilike(f'%{search_query}%'),
+                            ParkingSlot.pincode.ilike(f'%{search_query}%'),
+                            ParkingSlot.location.ilike(f'%{search_query}%')
+                        )
+                    ).distinct().all()
             else:
                 # If no search query, return all lots
                 lots = ParkingZone.query.all()
